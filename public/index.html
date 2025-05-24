@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Search API</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div class="search-container">
+        <h1>Google Search API</h1>
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="Enter your search query...">
+            <button onclick="performSearch()">Search</button>
+        </div>
+    </div>
+    <div class="error" id="error"></div>
+    <div class="loading" id="loading">Searching...</div>
+    <div class="results" id="results"></div>
+
+    <script>
+        const searchInput = document.getElementById('searchInput');
+        const resultsDiv = document.getElementById('results');
+        const loadingDiv = document.getElementById('loading');
+        const errorDiv = document.getElementById('error');
+
+        // Allow Enter key to trigger search
+        searchInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                performSearch();
+            }
+        });
+
+        async function performSearch() {
+            const query = searchInput.value.trim();
+            if (!query) {
+                showError('Please enter a search query');
+                return;
+            }
+
+            // Clear previous results and errors
+            resultsDiv.innerHTML = '';
+            errorDiv.style.display = 'none';
+            loadingDiv.style.display = 'block';
+
+            try {
+                console.log('Sending search request for query:', query);
+                const response = await fetch('/api/search', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ searchQuery: query })
+                });
+
+                const data = await response.json();
+                console.log('Received response:', data);
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'An error occurred during the search');
+                }
+
+                displayResults(data);
+            } catch (error) {
+                console.error('Search error:', error);
+                showError(error.message);
+            } finally {
+                loadingDiv.style.display = 'none';
+            }
+        }
+
+        function displayResults(data) {
+            console.log('Displaying results:', data);
+            resultsDiv.innerHTML = '';
+            
+            if (!data.results || data.results.length === 0) {
+                console.log('No results found in data');
+                resultsDiv.innerHTML = '<p>No results found.</p>';
+                return;
+            }
+
+            console.log(`Found ${data.results.length} results`);
+            data.results.forEach((result, index) => {
+                console.log(`Processing result ${index + 1}:`, result);
+                const resultElement = document.createElement('div');
+                resultElement.className = 'result-item';
+                
+                const titleElement = document.createElement('a');
+                titleElement.className = 'result-title';
+                titleElement.href = result.link;
+                titleElement.textContent = result.title;
+                titleElement.target = '_blank';
+                
+                const linkElement = document.createElement('div');
+                linkElement.className = 'result-link';
+                linkElement.textContent = result.link;
+                
+                const snippetElement = document.createElement('div');
+                snippetElement.className = 'result-snippet';
+                snippetElement.textContent = result.snippet;
+                
+                resultElement.appendChild(titleElement);
+                resultElement.appendChild(linkElement);
+                resultElement.appendChild(snippetElement);
+                
+                resultsDiv.appendChild(resultElement);
+            });
+        }
+
+        function showError(message) {
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+        }
+    </script>
+</body>
+</html> 
